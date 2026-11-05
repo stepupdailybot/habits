@@ -1,0 +1,30 @@
+name: Напоминания
+
+on:
+  schedule:
+    # Время указано по UTC. Здесь: 09:05, 13:05 и 20:05 по Екатеринбургу (UTC+5)
+    - cron: '5 4 * * *'
+    - cron: '5 8 * * *'
+    - cron: '5 15 * * *'
+  workflow_dispatch: # кнопка ручного запуска для проверки
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Отправить напоминание в Telegram
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          case "$SCHEDULE" in
+            "5 4 * * *")  TEXT="💧 Доброе утро! Начни со стакана воды." ;;
+            "5 8 * * *")  TEXT="🤸 Время размяться: 5 минут, и ты в плюсе." ;;
+            "5 15 * * *") TEXT="🔤 Вечерняя пятёрка: выучи 5 иностранных слов." ;;
+            *)            TEXT="🌱 Загляни в привычки и отметь, что уже сделал." ;;
+          esac
+          curl -sS --fail-with-body "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            -d chat_id="$CHAT_ID" \
+            --data-urlencode "text=$TEXT" \
+            --data-urlencode 'reply_markup={"inline_keyboard":[[{"text":"Открыть привычки","web_app":{"url":"https://stepupdailybot.github.io/habits/"}}]]}'
