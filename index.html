@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Микро-привычки</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eafaf1;--card:#fff;--tx:#1d3b2f;--mu:#6b8a7a;--ac:#2fbf71;--ac2:#c9f2dc;--on:#fff}
+[data-t=night]{--bg:#12141f;--card:#1e2233;--tx:#eef0ff;--mu:#8b90b0;--ac:#7c83ff;--ac2:#2c3160}
+[data-t=sunset]{--bg:#fff1e6;--card:#fff;--tx:#4a2a1d;--mu:#a37a66;--ac:#ff7a45;--ac2:#ffd9c2}
+[data-t=sakura]{--bg:#fff0f5;--card:#fff;--tx:#4d2038;--mu:#b07a93;--ac:#f0589b;--ac2:#ffd1e3}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font:600 16px/1.4 ui-rounded,Nunito,"Segoe UI",Roboto,system-ui,sans-serif;transition:background .4s,color .4s;padding-top:env(safe-area-inset-top)}
+#app{max-width:480px;margin:0 auto;padding:16px 16px 104px}
+.top{display:flex;justify-content:space-between;margin-bottom:14px}
+.chip{background:var(--card);border-radius:20px;padding:6px 14px;font-weight:800}
+.card{background:var(--card);border-radius:24px;padding:16px;margin-bottom:12px}
+.pet{text-align:center}
+.stage{width:150px;height:150px;margin:0 auto 6px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle,var(--ac2) 55%,transparent 72%)}
+.stage i{font-style:normal;font-size:84px;line-height:1;animation:bob 2.6s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px) scale(1.05)}}
+.say{margin:2px 0 12px;font-weight:800}
+.mu{color:var(--mu);font-weight:600;font-size:14px}
+.bar{height:10px;border-radius:6px;background:var(--ac2);overflow:hidden;margin-bottom:6px}
+.bar b{display:block;height:100%;background:var(--ac);transition:width .5s}
+.row{display:flex;justify-content:space-between;align-items:center;margin:16px 2px 8px;font-weight:800}
+.lnk{background:none;border:0;color:var(--ac);font:inherit}
+.h{display:flex;align-items:center;gap:12px;width:100%;border:0;text-align:left;font:inherit;color:inherit;background:var(--card);border-radius:18px;padding:14px;margin-bottom:10px}
+button.h{transition:transform .15s,opacity .3s}
+button.h:active{transform:scale(.97)}
+.ic{font-size:28px}
+.n{flex:1}
+.n small{display:block;color:var(--mu);font-weight:600;font-size:13px}
+.ck{width:30px;height:30px;border-radius:50%;border:2px solid var(--ac);display:grid;place-items:center;color:var(--on);font-size:15px}
+.h.on{opacity:.7}.h.on .ck{background:var(--ac)}.h.on .n{text-decoration:line-through}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.em{font-size:22px;width:40px;height:40px;border-radius:12px;border:2px solid transparent;background:var(--ac2)}
+.em.sel{border-color:var(--ac)}
+.add{display:flex;gap:8px}
+input{flex:1;min-width:0;border:2px solid var(--ac2);background:transparent;color:inherit;border-radius:14px;padding:10px 12px;font:inherit}
+.btn{background:var(--ac);color:var(--on);border:0;border-radius:14px;padding:10px 18px;font:inherit;font-weight:800}
+.btn:disabled{opacity:.4}
+.h .btn{padding:8px 12px;font-size:14px}
+.sw{width:30px;height:30px;border-radius:50%}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:8px;padding:8px 16px calc(8px + env(safe-area-inset-bottom));background:var(--card)}
+nav button{flex:1;max-width:200px;border:0;background:none;color:var(--mu);font:inherit;font-size:22px;padding:6px;border-radius:14px}
+nav button span{display:block;font-size:12px}
+nav button.on{color:var(--ac);background:var(--ac2)}
+.pop{position:fixed;font-weight:800;color:var(--ac);pointer-events:none;animation:up .9s ease-out forwards;z-index:9}
+@keyframes up{to{transform:translateY(-70px);opacity:0}}
+.toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:10px 18px;border-radius:20px;white-space:nowrap;z-index:9;animation:fade 2.2s forwards}
+@keyframes fade{80%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<nav>
+<button data-v="home" onclick="go('home')">🏠<span>Сегодня</span></button>
+<button data-v="shop" onclick="go('shop')">🛍️<span>Магазин</span></button>
+</nav>
+<script>
+const tg=window.Telegram&&Telegram.WebApp,$=s=>document.querySelector(s);
+try{tg.ready();tg.expand()}catch(e){}
+const TH={mint:['Мята',0,'#eafaf1','#2fbf71'],night:['Ночь',60,'#12141f','#7c83ff'],sunset:['Закат',100,'#fff1e6','#ff7a45'],sakura:['Сакура',150,'#fff0f5','#f0589b']};
+const PET=['🥚','🐣','🐥','🦜','🦉','🦄'],EM=['💧','🤸','📖','🧘','🔤','🚶','🍎','😴'];
+const KEY='mh1',today=()=>new Date().toLocaleDateString('sv');
+let view='home',edit=false,pick='💧';
+let S={coins:0,lvl:0,streak:0,day:today(),done:[],perfect:false,themes:['mint'],theme:'mint',habits:[
+{id:1,e:'💧',n:'Выпить стакан воды',r:5},{id:2,e:'🤸',n:'Разминка 5 минут',r:8},{id:3,e:'🔤',n:'5 иностранных слов',r:10}]};
+
+/* Хранилище: облако Telegram (синхронизация между устройствами) + localStorage как запасной вариант */
+const ls=()=>{try{return localStorage.getItem(KEY)}catch(e){return null}};
+const cloud=()=>{try{return tg&&tg.CloudStorage&&tg.isVersionAtLeast('6.9')}catch(e){return false}};
+const load=()=>new Promise(r=>{const l=ls();if(!cloud())return r(l);setTimeout(()=>r(l),1500);tg.CloudStorage.getItem(KEY,(e,v)=>r(v||l))});
+const put=v=>{try{localStorage.setItem(KEY,v)}catch(e){}if(cloud())try{tg.CloudStorage.setItem(KEY,v)}catch(e){}};
+
+const hap=t=>{try{t=='ok'?tg.HapticFeedback.notificationOccurred('success'):tg.HapticFeedback.impactOccurred(t)}catch(e){}};
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const petCost=()=>20+S.lvl*15;
+
+function roll(){const t=today();if(S.day===t)return;const gap=(new Date(t)-new Date(S.day))/864e5;if(!(S.perfect&&gap<=1.5))S.streak=0;S.day=t;S.done=[];S.perfect=false}
+function save(){put(JSON.stringify(S));render()}
+function pop(e,t){const p=document.createElement('div');p.className='pop';p.textContent=t;p.style.left=(e.clientX-20)+'px';p.style.top=(e.clientY-24)+'px';document.body.appendChild(p);setTimeout(()=>p.remove(),900)}
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2200)}
+
+function tog(id,ev){
+ const h=S.habits.find(x=>x.id===id),i=S.done.indexOf(id);
+ if(i<0){
+  S.done.push(id);S.coins+=h.r;pop(ev,'+'+h.r+' 🪙');hap('light');
+  if(S.done.length===S.habits.length&&!S.perfect){S.perfect=true;S.streak++;S.coins+=10;toast('🔥 Идеальный день! +10 🪙');hap('ok')}
+ }else{
+  S.done.splice(i,1);S.coins=Math.max(0,S.coins-h.r);
+  if(S.perfect){S.perfect=false;S.streak=Math.max(0,S.streak-1);S.coins=Math.max(0,S.coins-10)}
+ }
+ save();
+}
+function del(id){S.habits=S.habits.filter(x=>x.id!==id);S.done=S.done.filter(x=>x!==id);save()}
+function add(){const n=$('#nn').value.trim();if(!n||S.habits.length>=12)return;S.habits.push({id:Date.now(),e:pick,n:n.slice(0,40),r:5});save()}
+function pickE(b,e){pick=e;document.querySelectorAll('.em').forEach(x=>x.classList.toggle('sel',x===b))}
+function up(){const c=petCost();if(S.coins<c||S.lvl>=PET.length-1)return;S.coins-=c;S.lvl++;hap('ok');toast('Питомец вырос! '+PET[S.lvl]);save()}
+function buy(k){const c=TH[k][1];if(!S.themes.includes(k)){if(S.coins<c)return;S.coins-=c;S.themes.push(k);hap('ok')}S.theme=k;save()}
+function go(v){view=v;edit=false;render();scrollTo(0,0)}
+
+function render(){
+ document.documentElement.dataset.t=S.theme;
+ try{tg.setHeaderColor(TH[S.theme][2]);tg.setBackgroundColor(TH[S.theme][2])}catch(e){}
+ document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v==view));
+ const d=S.done.length,t=S.habits.length,p=t?d/t:0;
+ let h=`<div class=top><div class=chip>🪙 ${S.coins}</div><div class=chip>🔥 ${S.streak} дн.</div></div>`;
+ if(view=='home'){
+  const say=p==1?'Идеальный день! Я счастлив 🎉':p>0?'Отлично, осталось немного!':'Давай начнём с малого 🌱';
+  h+=`<div class="card pet"><div class=stage><i>${PET[S.lvl]}</i></div><div class=say>${say}</div><div class=bar><b style="width:${p*100}%"></b></div><div class=mu>Сегодня: ${d} из ${t}</div></div>`;
+  h+=`<div class=row>Мои ритуалы<button class=lnk onclick="edit=!edit;render()">${edit?'Готово':'✏️ Изменить'}</button></div>`;
+  h+=S.habits.map(x=>{const on=S.done.includes(x.id);return `<button class="h${on&&!edit?' on':''}" onclick="${edit?`del(${x.id})`:`tog(${x.id},event)`}"><span class=ic>${x.e}</span><span class=n>${esc(x.n)}<small>+${x.r} 🪙</small></span><span class=ck>${edit?'🗑':on?'✓':''}</span></button>`}).join('');
+  h+=`<div class=card><div class=chips>${EM.map(e=>`<button class="em${e==pick?' sel':''}" onclick="pickE(this,'${e}')">${e}</button>`).join('')}</div><div class=add><input id=nn maxlength=40 placeholder="Новая привычка…"><button class=btn onclick="add()">＋</button></div></div>`;
+ }else{
+  const max=S.lvl>=PET.length-1,c=petCost();
+  h+=`<div class="card pet"><div class=stage><i>${PET[S.lvl]}</i></div><div class=say>Уровень питомца: ${S.lvl+1} из ${PET.length}</div><button class=btn onclick="up()" ${max||S.coins<c?'disabled':''}>${max?'Максимальный уровень':`Прокачать · ${c} 🪙`}</button></div>`;
+  h+=`<div class=row>Темы оформления</div>`;
+  h+=Object.entries(TH).map(([k,[n,c,bg,ac]])=>{const own=S.themes.includes(k),cur=S.theme==k;return `<div class=h><span class=sw style="background:linear-gradient(135deg,${bg} 50%,${ac} 50%);border:2px solid ${ac}"></span><span class=n>${n}</span><button class=btn ${cur||(!own&&S.coins<c)?'disabled':''} onclick="buy('${k}')">${cur?'✓ Выбрана':own?'Применить':c+' 🪙'}</button></div>`}).join('');
+ }
+ $('#app').innerHTML=h;
+}
+
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){roll();save()}});
+(async()=>{
+ const r=await load();
+ try{if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+ roll();save();
+})();
+</script>
+</body>
+</html>
